@@ -10,6 +10,11 @@
 
 int	read_fd()
 {
+	struct sockaddr_storage their_addr;
+	socklen_t               addr_size;
+	struct addrinfo         hints;
+	struct addrinfo		*res;
+
 	i = 0;
 	while (i <= fdmax)
 	{
@@ -17,31 +22,30 @@ int	read_fd()
 		{
 			if (i == sockfd)
 			{
-			newfd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
-			printf("connex %d\n", newfd);
-			if (newfd > fdmax)
-			fdmax = newfd;
-			FD_SET(newfd, &master);
+				newfd = accept(sockfd, (struct sockaddr *)&their_addr,
+					        &addr_size);
+				printf("connex %d\n", newfd);
+				if (newfd > fdmax)
+					fdmax = newfd;
+				FD_SET(newfd, &master);
 			}
 			else 
 			{
-			if(recv(i,buff,sizeof buff,0) <= 0)
-			{
-				close(i);
-				FD_CLR(i,&master);
+				if(recv(i, buff, sizeof buff, 0) <= 0)
+				{
+					close(i);
+					FD_CLR(i,&master);
+				}
+				else
+					printf("MESSAGE DE %d :%s\n", i, buff);
 			}
-			else
-				printf("MESSAGE DE %d :%s\n",i,buff);
-			}
-			}
-			i = i + 1;
+		}
+		i = i + 1;
 	}
+}
 
 int	main(void)
 {
-	struct	sockaddr_storage their_addr;
-	socklen_t addr_size;
-	struct	addrinfo hints, *res;
 	int	sockfd;
 	fd_set	fdreads;
 	fd_set 	master;
@@ -54,23 +58,14 @@ int	main(void)
 	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 	bind(sockfd, res->ai_addr, res->ai_addrlen);
 	listen(sockfd, 10);
-
 	FD_ZERO(&fdreads);
 	FD_ZERO(&master);
 	FD_SET(sockfd,&master);
 	fdmax = sockfd;
-
-
 	while (1)
 	{
 		fdreads = master;
-		rev = select(fdmax+1, &fdreads, NULL, NULL, NULL);
-		
-		
-		}
-
-	
-
-	
+		rev = select(fdmax + 1, &fdreads, NULL, NULL, NULL);
+	}
 }
 
