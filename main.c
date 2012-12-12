@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <string.h>
@@ -7,6 +8,34 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
+int	read_fd()
+{
+	i = 0;
+	while (i <= fdmax)
+	{
+		if (FD_ISSET(i,&fdreads))
+		{
+			if (i == sockfd)
+			{
+			newfd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
+			printf("connex %d\n", newfd);
+			if (newfd > fdmax)
+			fdmax = newfd;
+			FD_SET(newfd, &master);
+			}
+			else 
+			{
+			if(recv(i,buff,sizeof buff,0) <= 0)
+			{
+				close(i);
+				FD_CLR(i,&master);
+			}
+			else
+				printf("MESSAGE DE %d :%s\n",i,buff);
+			}
+			}
+			i = i + 1;
+	}
 
 int	main(void)
 {
@@ -15,16 +44,8 @@ int	main(void)
 	struct	addrinfo hints, *res;
 	int	sockfd;
 	fd_set	fdreads;
-	struct	timeval tv;
-	int	newfd;
-	int	fdmax;
-	int	i;
-	char	buff[1024];
-	int	len;
-	int	rien;
-	int	rev;
-
-	len = sizeof buff;	
+	fd_set 	master;
+	
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC; 
 	hints.ai_socktype = SOCK_STREAM;
@@ -35,44 +56,18 @@ int	main(void)
 	listen(sockfd, 10);
 
 	FD_ZERO(&fdreads);
-	FD_SET(sockfd,&fdreads);
+	FD_ZERO(&master);
+	FD_SET(sockfd,&master);
 	fdmax = sockfd;
 
 
 	while (1)
 	{
-		tv.tv_sec = 3;
-        	tv.tv_usec = 0;
-		rev = select(FD_SETSIZE, &fdreads, NULL, NULL, NULL);
-			/*i = 4;
-			rien = 0;
-			while (i <= fdmax)
-			{
-				printf("%d",fdmax);
-				if (recv(i,buff,len,0))
-				{
-					printf(" ici %s \n",buff);
-					break;
-				}
-				i = i + 1;
-
-			}
-			printf("ici\n");
-			if (i == fdmax + 1)
-				rien = 1;
-			if (rien == 1)
-				{*/
-				printf("FD %d \n",rev);
-				newfd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
-				printf("connex %d\n", newfd);
-				sleep(3);
-				fdmax = newfd;
-				FD_SET(newfd, &fdreads);
-
-				//}
+		fdreads = master;
+		rev = select(fdmax+1, &fdreads, NULL, NULL, NULL);
 		
 		
-	}
+		}
 
 	
 
