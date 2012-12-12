@@ -8,40 +8,61 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-int	read_fd()
+int	new_client(int fdmax,int sockfd, fd_set* master)
 {
+	int newfd;
 	struct sockaddr_storage their_addr;
 	socklen_t               addr_size;
-	struct addrinfo         hints;
-	struct addrinfo		*res;
+
+	newfd = accept(sockfd, (struct sockaddr *)&their_addr,
+					        &addr_size);
+	printf("connex %d\n", newfd);
+	if (newfd > fdmax)
+	fdmax = newfd;
+	FD_SET(newfd, master);
+	
+	return fdmax;
+}
+int	read_fd(int sockfd, int fdmax,fd_set* master,fd_set* fdreads)
+{
+	int	i;
+	int	j;
+	char 	buff[256];
+	int	nbytes;
 
 	i = 0;
 	while (i <= fdmax)
 	{
-		if (FD_ISSET(i,&fdreads))
+		if (FD_ISSET(i,fdreads))
 		{
 			if (i == sockfd)
-			{
-				newfd = accept(sockfd, (struct sockaddr *)&their_addr,
-					        &addr_size);
-				printf("connex %d\n", newfd);
-				if (newfd > fdmax)
-					fdmax = newfd;
-				FD_SET(newfd, &master);
-			}
+				fdmax = new_client(fdmax,sockfd,master);
 			else 
 			{
-				if(recv(i, buff, sizeof buff, 0) <= 0)
+				nbytes = recv(i, buff, sizeof buff, 0);
+			
+				if(nbytes <= 0)
 				{
 					close(i);
-					FD_CLR(i,&master);
+					FD_CLR(i,master);
 				}
 				else
-					printf("MESSAGE DE %d :%s\n", i, buff);
+				{
+					printf("Essaye d4envoyer %d\n",nbytes);
+					j = 0;
+					while (j <= fdmax)
+					{
+						if (FD_ISSET(j,master))
+							if (j != sockfd && j != i)
+								send(j,buff,nbytes,0);
+						j = j + 1;
+					}
+				}
 			}
 		}
 		i = i + 1;
 	}
+	return fdmax;
 }
 
 int	main(void)
@@ -49,6 +70,9 @@ int	main(void)
 	int	sockfd;
 	fd_set	fdreads;
 	fd_set 	master;
+	int	fdmax;
+	struct addrinfo         hints;
+	struct addrinfo		*res;
 	
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC; 
@@ -65,7 +89,8 @@ int	main(void)
 	while (1)
 	{
 		fdreads = master;
-		rev = select(fdmax + 1, &fdreads, NULL, NULL, NULL);
+		select(fdmax + 1, &fdreads, NULL, NULL, NULL);
+		fdmax = read_fd(sockfd, fdmax,&master,&fdreads);
 	}
 }
 
