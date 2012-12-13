@@ -7,23 +7,22 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include "base.h"
 
-int	new_client(int fdmax,int sockfd, fd_set* master)
+
+void	new_client(s_env* env, int* fdmax)
 {
 	int newfd;
-	struct sockaddr_storage their_addr;
-	socklen_t               addr_size;
 
-	newfd = accept(sockfd, (struct sockaddr *)&their_addr,
-					        &addr_size);
+	env->addr_size = sizeof env->their_addr;
+	newfd = accept(env->sockfd, (struct sockaddr *)&env->their_addr,&env->addr_size);
 	printf("connex %d\n", newfd);
-	if (newfd > fdmax)
-	fdmax = newfd;
-	FD_SET(newfd, master);
+	if (newfd > *fdmax)
+	*fdmax = newfd;
+	FD_SET(newfd, &env->master);
 	
-	return fdmax;
 }
-int	read_fd(int sockfd, int fdmax,fd_set* master,fd_set* fdreads)
+void	read_fd(s_env* env, int* fdmax)
 {
 	int	i;
 	int	j;
@@ -31,29 +30,27 @@ int	read_fd(int sockfd, int fdmax,fd_set* master,fd_set* fdreads)
 	int	nbytes;
 
 	i = 0;
-	while (i <= fdmax)
+	while (i <= *fdmax)
 	{
-		if (FD_ISSET(i,fdreads))
+		if (FD_ISSET(i,&env->fdreads))
 		{
-			if (i == sockfd)
-				fdmax = new_client(fdmax,sockfd,master);
+			if (i == env->sockfd)
+				new_client(env,fdmax);
 			else 
-			{
 				nbytes = recv(i, buff, sizeof buff, 0);
-			
 				if(nbytes <= 0)
 				{
 					close(i);
-					FD_CLR(i,master);
+					FD_CLR(i,&env->master);
 				}
 				else
 				{
 					printf("Essaye d4envoyer %d\n",nbytes);
 					j = 0;
-					while (j <= fdmax)
+					while (j <= *fdmax)
 					{
-						if (FD_ISSET(j,master))
-							if (j != sockfd && j != i)
+						if (FD_ISSET(j,&env->master))
+							if (j != env->sockfd && j != i)
 								send(j,buff,nbytes,0);
 						j = j + 1;
 					}
@@ -62,35 +59,34 @@ int	read_fd(int sockfd, int fdmax,fd_set* master,fd_set* fdreads)
 		}
 		i = i + 1;
 	}
-	return fdmax;
 }
 
 int	main(void)
 {
-	int	sockfd;
-	fd_set	fdreads;
-	fd_set 	master;
-	int	fdmax;
 	struct addrinfo         hints;
 	struct addrinfo		*res;
+	s_env	env;
+	int fdmax;
 	
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC; 
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 	getaddrinfo("127.0.0.1", "3490", &hints, &res);
-	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-	bind(sockfd, res->ai_addr, res->ai_addrlen);
-	listen(sockfd, 10);
-	FD_ZERO(&fdreads);
-	FD_ZERO(&master);
-	FD_SET(sockfd,&master);
-	fdmax = sockfd;
+	env.sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+	bind(env.sockfd, res->ai_addr, res->ai_addrlen);
+	listen(env.sockfd, 10);
+	FD_ZERO(&env.fdreads);
+	FD_ZERO(&env.master);
+	FD_SET(env.sockfd,&env.master);
+	fdmax = env.sockfd;
 	while (1)
 	{
-		fdreads = master;
-		select(fdmax + 1, &fdreads, NULL, NULL, NULL);
-		fdmax = read_fd(sockfd, fdmax,&master,&fdreads);
+		env.fdreads = env.master;
+		printf("AVANT\n");
+		select(fdmax + 1, &env.fdreads, NULL, NULL, NULL);
+		printf("APRES\n");
+		read_fd(&env,&fdmax);
 	}
 }
 
