@@ -9,10 +9,9 @@
 #include <unistd.h>
 #include "base.h"
 
-
 void	new_client(s_env* env, int* fdmax)
 {
-	int newfd;
+	int	newfd;
 
 	env->addr_size = sizeof env->their_addr;
 	newfd = accept(env->sockfd, (struct sockaddr *)&env->their_addr,&env->addr_size);
@@ -36,7 +35,8 @@ void	read_fd(s_env* env, int* fdmax)
 		{
 			if (i == env->sockfd)
 				new_client(env,fdmax);
-			else 
+			else
+			{
 				nbytes = recv(i, buff, sizeof buff, 0);
 				if(nbytes <= 0)
 				{
@@ -57,16 +57,16 @@ void	read_fd(s_env* env, int* fdmax)
 				}
 			}
 		}
-		i = i + 1;
 	}
+	i = i + 1;
 }
 
 int	main(void)
 {
 	struct addrinfo         hints;
 	struct addrinfo		*res;
-	s_env	env;
-	int fdmax;
+	s_env			env;
+	int			fdmax;
 	
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC; 
@@ -89,4 +89,3 @@ int	main(void)
 		read_fd(&env,&fdmax);
 	}
 }
-
