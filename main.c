@@ -22,10 +22,7 @@ void	send_all_client(s_env* env,int	nbytes, char* buff, int i)
 				send(j,buff,nbytes,0);
 		j = j + 1;
 	}
-
-	
 }
-
 
 void	new_client(s_env* env)
 {
@@ -35,10 +32,10 @@ void	new_client(s_env* env)
 	newfd = accept(env->sockfd, (struct sockaddr *)&env->their_addr,&env->addr_size);
 	printf("connex %d\n", newfd);
 	if (newfd > env->fdmax)
-	env->fdmax = newfd;
+		env->fdmax = newfd;
 	FD_SET(newfd, &env->master);
-	
 }
+
 void	read_fd(s_env* env)
 {
 	int	i;
@@ -47,7 +44,7 @@ void	read_fd(s_env* env)
 
 	i = 0;
 	while (i <= env->fdmax)
-	{ 
+	{
 		if (FD_ISSET(i,&env->fdreads))
 		{
 			if (i == env->sockfd)
@@ -70,10 +67,10 @@ void	read_fd(s_env* env)
 
 int	main(void)
 {
-	struct addrinfo         hints;
-	struct addrinfo		*res;
-	s_env			env;
-	
+	struct addrinfo	hints;
+	struct addrinfo	*res;
+	s_env		env;
+
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC; 
 	hints.ai_socktype = SOCK_STREAM;
