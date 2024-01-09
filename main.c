@@ -35,7 +35,7 @@ void	new_client(s_env* env)
 {
 	int	newfd;
 	char	buff[1024];
-	char	welcom[] = "Welcome to the Internet Relay Network nick!user@host\n";
+	char	welcome[] = "Welcome to the Internet Relay Network nick!user@host\n";
 	char 	yourhost[] = "Your host is servername, running version version\n";
 	char	create[] = "server_name version user_modes chan_modes\n";
 
@@ -47,7 +47,7 @@ void	new_client(s_env* env)
 	FD_SET(newfd, &env->master);
 	recv(newfd, buff, sizeof buff, 0);
 	printf("%s\n",buff);
-	send(newfd,welcom,sizeof welcom,0);
+	send(newfd,welcome,sizeof welcome,0);
 	send(newfd,yourhost,sizeof yourhost,0);
 	send(newfd,create,sizeof create,0);
 	
